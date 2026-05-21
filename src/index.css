@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Arabic font stack */
+* {
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #0a0a0f;
+  color: #e8e8f0;
+  direction: rtl;
+  overflow-x: hidden;
+}
+
+/* Prevent text selection during drawing */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #12121a; }
+::-webkit-scrollbar-thumb { background: #2e2e4e; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #6c63ff; }
+
+/* Touch action for canvas drawing area */
+.canvas-area { touch-action: none; }
+
+/* Glass card */
+.glass {
+  background: rgba(18, 18, 26, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(108, 99, 255, 0.15);
+}
+
+/* Maze glow */
+.maze-glow {
+  box-shadow: 0 0 60px rgba(108, 99, 255, 0.12), 0 0 120px rgba(108, 99, 255, 0.06);
+}
+
+/* Zone pulse animation */
+@keyframes zonePulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50%       { transform: scale(1.18); opacity: 1; }
+}
+.zone-pulse { animation: zonePulse 1.8s ease-in-out infinite; }
+
+/* Timer pulse when running */
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+.timer-running { animation: timerPulse 2s ease-in-out infinite; }
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.3s ease forwards; }
+
+@layer components {
+  .btn-primary {
+    @apply bg-[#6c63ff] hover:bg-[#7c74ff] text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed select-none;
+  }
+  .btn-ghost {
+    @apply bg-transparent border border-[#2e2e4e] hover:border-[#6c63ff] text-[#e8e8f0] font-medium px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-95 select-none;
+  }
+  .btn-danger {
+    @apply bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-medium px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-95 select-none;
+  }
+  .btn-success {
+    @apply bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-95 select-none;
+  }
+  .btn-icon {
+    @apply flex items-center justify-center w-10 h-10 rounded-xl border border-[#2e2e4e] hover:border-[#6c63ff] text-[#6b6b8a] hover:text-[#6c63ff] transition-all duration-200 active:scale-90 select-none;
+  }
+  .card {
+    @apply bg-[#12121a] border border-[#1e1e2e] rounded-2xl;
+  }
+  .input-field {
+    @apply bg-[#0a0a0f] border border-[#1e1e2e] focus:border-[#6c63ff] text-[#e8e8f0] rounded-xl px-4 py-3 w-full outline-none transition-colors duration-200 placeholder-[#6b6b8a];
+  }
+  .label {
+    @apply text-sm text-[#6b6b8a] mb-1 block;
+  }
+  .section-title {
+    @apply text-2xl font-bold text-[#e8e8f0] mb-1;
+  }
+  .section-sub {
+    @apply text-sm text-[#6b6b8a];
+  }
+}
