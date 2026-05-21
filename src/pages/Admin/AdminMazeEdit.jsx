@@ -4,7 +4,8 @@ import Navbar from '../../components/Navbar'
 import ZoneOverlay from '../../components/ZoneOverlay'
 import { useMazeStore } from '../../store/mazeStore'
 import { useViewport } from '../../hooks/useViewport'
-import { Save, MapPin, Loader, Eye, EyeOff, ZoomIn, ZoomOut } from 'lucide-react'
+import { BUCKETS } from '../../lib/supabase'
+import { Save, MapPin, Loader, Eye, EyeOff, Upload } from 'lucide-react'
 
 // ─── AdminMazeEdit ─────────────────────────────────────────────────────────────
 // Admin can:
@@ -22,7 +23,7 @@ export default function AdminMazeEdit() {
   const containerRef = useRef(null)
   const imgRef = useRef(null)
 
-  const { fetchOne, updateMaze } = useMazeStore()
+  const { fetchOne, updateMaze, uploadFile } = useMazeStore()
   const [maze, setMaze] = useState(null)
   const [form, setForm] = useState({})
   const [zones, setZones] = useState({ start: null, end: null })
@@ -31,6 +32,8 @@ export default function AdminMazeEdit() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
+  const [uploadingImg, setUploadingImg] = useState(false)
+  const imgInputRef = useRef(null)
 
   const { transform, fitToContainer, zoomIn, zoomOut, handlers } = useViewport(containerRef)
 
@@ -93,6 +96,24 @@ export default function AdminMazeEdit() {
       setError(e.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleImageReplace = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingImg(true)
+    setError(null)
+    try {
+      const url = await uploadFile(BUCKETS.MAZE_PROCESSED, `${Date.now()}_maze.jpg`, file)
+      const updated = await updateMaze(id, { processed_url: url })
+      setMaze(prev => ({ ...prev, processed_url: url }))
+      setMazeSize({ w: updated?.width || 800, h: updated?.height || 800 })
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setUploadingImg(false)
+      e.target.value = ''
     }
   }
 
@@ -161,6 +182,19 @@ export default function AdminMazeEdit() {
               </p>
             )}
 
+            {/* Re-upload image button */}
+            <div className="flex items-center gap-2 mb-2">
+              <input ref={imgInputRef} type="file" accept=".png,.jpg,.jpeg,.webp" className="hidden" onChange={handleImageReplace} />
+              <button
+                onClick={() => imgInputRef.current?.click()}
+                disabled={uploadingImg}
+                className="flex items-center gap-1.5 text-xs text-[#6b6b8a] hover:text-[#e8e8f0] border border-[#1e1e2e] hover:border-[#2e2e4e] rounded-lg px-3 py-1.5 transition-all"
+              >
+                {uploadingImg ? <Loader size={12} className="animate-spin" /> : <Upload size={12} />}
+                {uploadingImg ? 'جارٍ الرفع...' : 'رفع صورة جديدة'}
+              </button>
+            </div>
+
             {/* Maze viewport */}
             <div
               ref={containerRef}
@@ -178,7 +212,7 @@ export default function AdminMazeEdit() {
                   height: mazeSize.h,
                 }}
               >
-                {maze.processed_url && (
+                {maze.processed_url ? (
                   <img
                     ref={imgRef}
                     src={maze.processed_url}
@@ -188,6 +222,17 @@ export default function AdminMazeEdit() {
                     style={{ width: mazeSize.w, height: mazeSize.h }}
                     draggable={false}
                   />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[#6b6b8a]">
+                    <Upload size={32} className="opacity-30" />
+                    <p className="text-sm">لا توجد صورة — ارفع صورة جديدة</p>
+                    <button
+                      onClick={() => imgInputRef.current?.click()}
+                      className="text-xs btn-primary px-4 py-2"
+                    >
+                      رفع صورة
+                    </button>
+                  </div>
                 )}
                 <ZoneOverlay
                   zones={zones}
@@ -243,18 +288,10 @@ export default function AdminMazeEdit() {
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
               </div>
               <div>
-                <label className="label">الفئة</label>
-                <select className="input-field text-sm" value={form.category}
-                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  <option value="">اختر...</option>
-                  {['دائري', 'مربع', 'دماغ', 'هندسي', 'مجرد', 'أخرى'].map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
                 <label className="label">الصعوبة</label>
                 <select className="input-field text-sm" value={form.difficulty}
                   onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))}>
-                  {[['easy','سهل'],['medium','متوسط'],['hard','صعب'],['expert','خبير']].map(([v,l]) => (
+                  {[['easy','سهل'],['medium','متوسط'],['hard','صعب']].map(([v,l]) => (
                     <option key={v} value={v}>{l}</option>
                   ))}
                 </select>

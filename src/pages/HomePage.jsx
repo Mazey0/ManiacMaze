@@ -27,7 +27,7 @@ export default function HomePage() {
 
           <h1 className="text-4xl sm:text-5xl font-black text-white mb-4 leading-tight">
             تحدِّ نفسك في<br />
-            <span className="text-[#6c63ff]">متاهات فنية</span>
+            <span className="text-[#6c63ff]">متاهة مهووس</span>
           </h1>
 
           <p className="text-[#6b6b8a] text-lg mb-10 leading-relaxed max-w-md mx-auto">
@@ -49,7 +49,7 @@ export default function HomePage() {
           {[
             { icon: <Zap size={18} />, title: 'رسم حرّ', desc: 'ارسم المسار بالقلم أو الإصبع أو الماوس' },
             { icon: <RefreshCw size={18} />, title: 'استكمل لاحقًا', desc: 'رسمك ووقتك محفوظان دائمًا' },
-            { icon: <Lock size={18} />, title: 'متاهات فنية', desc: 'أشكال هندسية فريدة من نوعها' },
+            { icon: <Lock size={18} />, title: 'متاهة مهووس', desc: 'أشكال هندسية فريدة من نوعها' },
           ].map((f, i) => (
             <div key={i} className="card p-5 text-right">
               <div className="text-[#6c63ff] mb-3">{f.icon}</div>

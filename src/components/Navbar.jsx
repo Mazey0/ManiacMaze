@@ -15,7 +15,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 select-none">
           <span className="text-lg font-black text-white tracking-tight">Maniac<span className="text-[#6c63ff]"> Maze</span></span>
-          <span className="hidden sm:block text-xs text-[#6b6b8a] border border-[#2e2e4e] rounded px-1.5 py-0.5">متاهات فنية</span>
+          <span className="hidden sm:block text-xs text-[#6b6b8a] border border-[#2e2e4e] rounded px-1.5 py-0.5">متاهة مهووس</span>
         </Link>
 
         {/* Nav links */}

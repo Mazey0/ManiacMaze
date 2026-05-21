@@ -4,23 +4,20 @@ import MazeCard from '../components/MazeCard'
 import { useMazeStore } from '../store/mazeStore'
 import { Loader, Search } from 'lucide-react'
 
-const CATEGORIES = ['الكل', 'دائري', 'مربع', 'دماغ', 'هندسي', 'مجرد']
-const DIFFICULTIES = ['الكل', 'easy', 'medium', 'hard', 'expert']
-const DIFF_AR = { easy: 'سهل', medium: 'متوسط', hard: 'صعب', expert: 'خبير' }
+const DIFFICULTIES = ['الكل', 'easy', 'medium', 'hard']
+const DIFF_AR = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' }
 
 export default function GalleryPage() {
   const { mazes, loading, fetchPublished } = useMazeStore()
   const [search, setSearch] = useState('')
-  const [cat, setCat] = useState('الكل')
   const [diff, setDiff] = useState('الكل')
 
   useEffect(() => { fetchPublished() }, [])
 
   const filtered = mazes.filter(m => {
     const matchSearch = !search || m.title?.includes(search) || m.description?.includes(search)
-    const matchCat = cat === 'الكل' || m.category === cat
     const matchDiff = diff === 'الكل' || m.difficulty === diff
-    return matchSearch && matchCat && matchDiff
+    return matchSearch && matchDiff
   })
 
   return (
@@ -44,22 +41,6 @@ export default function GalleryPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-          </div>
-          {/* Category chips */}
-          <div className="flex gap-2 flex-wrap">
-            {CATEGORIES.map(c => (
-              <button
-                key={c}
-                onClick={() => setCat(c)}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-all duration-200 ${
-                  cat === c
-                    ? 'bg-[#6c63ff] border-[#6c63ff] text-white'
-                    : 'border-[#1e1e2e] text-[#6b6b8a] hover:border-[#6c63ff]'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
           </div>
           {/* Difficulty chips */}
           <div className="flex gap-2 flex-wrap">

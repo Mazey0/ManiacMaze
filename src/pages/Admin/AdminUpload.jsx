@@ -283,27 +283,14 @@ export default function AdminUpload() {
               <textarea className="input-field resize-none h-20" placeholder="وصف قصير..."
                 value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">الفئة</label>
-                <select className="input-field" value={form.category}
-                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  <option value="">اختر...</option>
-                  {['دائري', 'مربع', 'دماغ', 'هندسي', 'مجرد', 'أخرى'].map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">الصعوبة</label>
-                <select className="input-field" value={form.difficulty}
-                  onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))}>
-                  <option value="easy">سهل</option>
-                  <option value="medium">متوسط</option>
-                  <option value="hard">صعب</option>
-                  <option value="expert">خبير</option>
-                </select>
-              </div>
+            <div>
+              <label className="label">الصعوبة</label>
+              <select className="input-field" value={form.difficulty}
+                onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))}>
+                <option value="easy">سهل</option>
+                <option value="medium">متوسط</option>
+                <option value="hard">صعب</option>
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
