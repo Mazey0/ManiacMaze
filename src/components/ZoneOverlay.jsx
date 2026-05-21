@@ -52,7 +52,7 @@ export default function ZoneOverlay({
           fillOpacity={isHit ? 0.35 : 0.18}
           stroke={color}
           strokeWidth={2}
-          style={{ cursor: adminMode ? 'move' : 'default' }}
+          style={{ cursor: adminMode ? 'move' : 'default', pointerEvents: adminMode ? 'all' : 'none' }}
           onPointerDown={adminMode ? (e) => handleDrag(e, type) : undefined}
         />
         {/* Label */}
@@ -100,8 +100,8 @@ export default function ZoneOverlay({
 
   return (
     <svg
-      className="absolute inset-0 pointer-events-none"
-      style={{ width: '100%', height: '100%', overflow: 'visible' }}
+      className="absolute inset-0"
+      style={{ width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}
     >
       {renderZone(zones.start, 'start')}
       {renderZone(zones.end, 'end')}

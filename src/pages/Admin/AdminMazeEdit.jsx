@@ -59,8 +59,8 @@ export default function AdminMazeEdit() {
     fitToContainer(img.naturalWidth, img.naturalHeight)
   }, [fitToContainer])
 
-  // Click on maze to place zone
-  const handleMazeClick = useCallback((e) => {
+  // PointerDown on maze to place zone (onPointerDown so stopPropagation from zone circles works)
+  const handleMazePointerDown = useCallback((e) => {
     if (!placingZone) return
     const container = containerRef.current
     if (!container) return
@@ -200,7 +200,7 @@ export default function AdminMazeEdit() {
               ref={containerRef}
               className="relative overflow-hidden bg-[#0a0a0f] rounded-2xl border border-[#1e1e2e]"
               style={{ height: '60vh', cursor: placingZone ? 'crosshair' : 'default' }}
-              onClick={handleMazeClick}
+              onPointerDown={handleMazePointerDown}
               {...handlers}
             >
               <div

@@ -1,5 +1,8 @@
 import { create } from 'zustand'
-import { supabase, TABLES } from '../lib/supabase'
+import { supabase, IS_DEMO, TABLES } from '../lib/supabase'
+
+const genId = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)
+const ATTEMPTS_KEY = 'imaze_demo_attempts'
 
 // Draft key prefix for localStorage (temporary in-progress saves)
 const DRAFT_KEY = (mazeId) => `imaze_draft_${mazeId}`
@@ -130,16 +133,36 @@ export const useSolverStore = create((set, get) => ({
     localStorage.setItem(DRAFT_KEY(mazeId), JSON.stringify({ strokes, elapsedMs, solved, submitted, startedAt }))
   },
 
-  // Submit completed attempt to Supabase
+  // Submit completed attempt
   submitAttempt: async (mazeId, deviceInfo) => {
     const { strokes, elapsedMs, startedAt, solved } = get()
+
+    if (IS_DEMO) {
+      const attempt = {
+        id: genId(),
+        maze_id: mazeId,
+        elapsed_ms: elapsedMs,
+        started_at: startedAt,
+        submitted_at: new Date().toISOString(),
+        solved,
+        device_type: deviceInfo?.type || 'unknown',
+      }
+      try {
+        const all = JSON.parse(localStorage.getItem(ATTEMPTS_KEY) || '[]')
+        localStorage.setItem(ATTEMPTS_KEY, JSON.stringify([attempt, ...all]))
+      } catch { /* quota — skip saving attempt */ }
+      set({ submitted: true })
+      localStorage.removeItem(DRAFT_KEY(mazeId))
+      return attempt
+    }
+
     const attemptPayload = {
       maze_id: mazeId,
       elapsed_ms: elapsedMs,
       started_at: startedAt,
       submitted_at: new Date().toISOString(),
       solved,
-      interrupted: false,    // Practice Mode: interruption flag for future use
+      interrupted: false,
       device_type: deviceInfo?.type || 'unknown',
       device_info: deviceInfo || {},
     }
@@ -150,7 +173,6 @@ export const useSolverStore = create((set, get) => ({
       .single()
     if (aErr) throw aErr
 
-    // Save stroke data for replay
     if (strokes.length > 0) {
       const strokeRows = strokes.map((s, idx) => ({
         attempt_id: attempt.id,
