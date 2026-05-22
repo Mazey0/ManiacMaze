@@ -1,53 +1,61 @@
 import { create } from 'zustand'
-import { supabase, IS_DEMO } from '../lib/supabase'
+import { IS_DEMO } from '../lib/supabase'
 
-const DEMO_SESSION_KEY = 'imaze_demo_admin'
+const SESSION_KEY = 'imaze_admin_session'
+const ADMIN_PIN = '1997'
 
 export const useAuthStore = create((set, get) => ({
   user: null,
   loading: true,
   error: null,
-  isDemo: IS_DEMO,
+  pendingEmail: null,
 
   init: async () => {
-    if (IS_DEMO) {
-      // الوضع التجريبي: تحقق من جلسة محفوظة في sessionStorage
-      const saved = sessionStorage.getItem(DEMO_SESSION_KEY)
-      set({ user: saved ? { email: saved, id: 'demo' } : null, loading: false })
-      return
-    }
-    const { data: { session } } = await supabase.auth.getSession()
-    set({ user: session?.user ?? null, loading: false })
-    supabase.auth.onAuthStateChange((_event, session) => {
-      set({ user: session?.user ?? null })
-    })
+    const saved = sessionStorage.getItem(SESSION_KEY)
+    set({ user: saved ? JSON.parse(saved) : null, loading: false })
   },
 
   login: async (email, password) => {
     set({ error: null, loading: true })
+    await new Promise(r => setTimeout(r, 400))
 
     if (IS_DEMO) {
-      // الوضع التجريبي: أي بريد + كلمة مرور تعمل
-      await new Promise(r => setTimeout(r, 600))
-      const demoUser = { email, id: 'demo' }
-      sessionStorage.setItem(DEMO_SESSION_KEY, email)
-      set({ user: demoUser, loading: false })
-      return true
+      set({ loading: false, pendingEmail: email })
+      return 'pin'
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      set({ error: error.message, loading: false })
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
+    const adminPass  = import.meta.env.VITE_ADMIN_PASS
+
+    if (!adminEmail || !adminPass) {
+      set({ error: 'بيانات الدخول غير مُكوَّنة على الخادم', loading: false })
       return false
     }
-    set({ user: data.user, loading: false })
+
+    if (email.trim() !== adminEmail.trim() || password !== adminPass) {
+      set({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة', loading: false })
+      return false
+    }
+
+    set({ loading: false, pendingEmail: email })
+    return 'pin'
+  },
+
+  verifyPin: (pin) => {
+    if (pin !== ADMIN_PIN) {
+      set({ error: 'رمز التحقق غير صحيح' })
+      return false
+    }
+    const email = get().pendingEmail
+    const user = { email, id: 'admin' }
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user))
+    set({ user, pendingEmail: null, error: null })
     return true
   },
 
-  logout: async () => {
-    if (!IS_DEMO) await supabase.auth.signOut()
-    sessionStorage.removeItem(DEMO_SESSION_KEY)
-    set({ user: null })
+  logout: () => {
+    sessionStorage.removeItem(SESSION_KEY)
+    set({ user: null, pendingEmail: null })
   },
 
   clearError: () => set({ error: null }),
