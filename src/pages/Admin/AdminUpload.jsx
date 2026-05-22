@@ -89,10 +89,12 @@ export default function AdminUpload() {
       const blob = await cropCanvasToBlob(pageData.canvas, crop)
       const filename = `${Date.now()}_maze.png`
 
-      // Upload original file
+      // Upload original file (sanitize filename to ASCII-only to avoid ISO-8859-1 header errors)
       let originalUrl = null
       if (file) {
-        originalUrl = await uploadFile(BUCKETS.MAZE_ORIGINALS, `${Date.now()}_${file.name}`, file)
+        const rawExt = file.name.includes('.') ? file.name.split('.').pop() : 'bin'
+        const ext = rawExt.replace(/[^a-zA-Z0-9]/g, '') || 'bin'
+        originalUrl = await uploadFile(BUCKETS.MAZE_ORIGINALS, `${Date.now()}_original.${ext}`, file)
       }
 
       // Upload processed image
