@@ -119,11 +119,18 @@ export const useMazeStore = create((set, get) => ({
         reader.readAsDataURL(file)
       })
     }
-    const { error } = await supabase.storage.from(bucket).upload(path, file, {
+    // Convert File → Blob to strip any non-ASCII filename that would break fetch headers
+    const safeBody = (file instanceof File)
+      ? new Blob([file], { type: file.type || 'application/octet-stream' })
+      : file
+    // Encode path so non-ASCII characters in the URL don't cause fetch errors
+    const safePath = path.split('/').map(encodeURIComponent).join('/')
+    const { error } = await supabase.storage.from(bucket).upload(safePath, safeBody, {
       cacheControl: '3600', upsert: true,
+      contentType: safeBody.type || 'application/octet-stream',
     })
     if (error) throw error
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+    const { data } = supabase.storage.from(bucket).getPublicUrl(safePath)
     return data.publicUrl
   },
 
