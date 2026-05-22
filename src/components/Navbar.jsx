@@ -32,7 +32,7 @@ export default function Navbar() {
           )}
           {!isAdmin && (
             <Link to="/admin/login" className="text-[#6b6b8a] hover:text-[#e8e8f0] transition-colors duration-200">
-              الإدارة
+              المهووس
             </Link>
           )}
         </div>

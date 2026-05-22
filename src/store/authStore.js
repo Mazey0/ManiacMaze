@@ -1,52 +1,44 @@
 import { create } from 'zustand'
-import { supabase, IS_DEMO } from '../lib/supabase'
+import { IS_DEMO } from '../lib/supabase'
 
-const DEMO_SESSION_KEY = 'imaze_demo_admin'
+const SESSION_KEY = 'imaze_admin_session'
 
 export const useAuthStore = create((set, get) => ({
   user: null,
   loading: true,
   error: null,
-  isDemo: IS_DEMO,
 
   init: async () => {
-    if (IS_DEMO) {
-      // الوضع التجريبي: تحقق من جلسة محفوظة في sessionStorage
-      const saved = sessionStorage.getItem(DEMO_SESSION_KEY)
-      set({ user: saved ? { email: saved, id: 'demo' } : null, loading: false })
-      return
-    }
-    const { data: { session } } = await supabase.auth.getSession()
-    set({ user: session?.user ?? null, loading: false })
-    supabase.auth.onAuthStateChange((_event, session) => {
-      set({ user: session?.user ?? null })
-    })
+    const saved = sessionStorage.getItem(SESSION_KEY)
+    set({ user: saved ? JSON.parse(saved) : null, loading: false })
   },
 
-  login: async (email, password) => {
+  login: async (username, password) => {
     set({ error: null, loading: true })
+    await new Promise(r => setTimeout(r, 350))
 
     if (IS_DEMO) {
-      // الوضع التجريبي: أي بريد + كلمة مرور تعمل
-      await new Promise(r => setTimeout(r, 600))
-      const demoUser = { email, id: 'demo' }
-      sessionStorage.setItem(DEMO_SESSION_KEY, email)
-      set({ user: demoUser, loading: false })
+      // وضع تجريبي — أي كلمة مرور تنجح
+      const user = { id: 'admin', username }
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(user))
+      set({ user, loading: false })
       return true
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      set({ error: error.message, loading: false })
+    const key = import.meta.env.VITE_ADMIN_KEY
+    if (!key || password !== key) {
+      set({ error: '✕', loading: false })
       return false
     }
-    set({ user: data.user, loading: false })
+
+    const user = { id: 'admin', username }
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user))
+    set({ user, loading: false })
     return true
   },
 
-  logout: async () => {
-    if (!IS_DEMO) await supabase.auth.signOut()
-    sessionStorage.removeItem(DEMO_SESSION_KEY)
+  logout: () => {
+    sessionStorage.removeItem(SESSION_KEY)
     set({ user: null })
   },
 
