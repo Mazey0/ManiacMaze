@@ -1,7 +1,12 @@
 import { create } from 'zustand'
-import { IS_DEMO } from '../lib/supabase'
 
 const SESSION_KEY = 'imaze_admin_session'
+const PASS_HASH = '399b378b8a1bbab8ec9d0e72cd859c57a13414c26bf537199dc8c05b3f8c0a63'
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -13,25 +18,15 @@ export const useAuthStore = create((set, get) => ({
     set({ user: saved ? JSON.parse(saved) : null, loading: false })
   },
 
-  login: async (username, password) => {
+  login: async (password) => {
     set({ error: null, loading: true })
     await new Promise(r => setTimeout(r, 350))
-
-    if (IS_DEMO) {
-      // وضع تجريبي — أي كلمة مرور تنجح
-      const user = { id: 'admin', username }
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(user))
-      set({ user, loading: false })
-      return true
-    }
-
-    const key = import.meta.env.VITE_ADMIN_KEY
-    if (!key || password !== key) {
+    const hash = await sha256(password)
+    if (hash !== PASS_HASH) {
       set({ error: '✕', loading: false })
       return false
     }
-
-    const user = { id: 'admin', username }
+    const user = { id: 'admin' }
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(user))
     set({ user, loading: false })
     return true
