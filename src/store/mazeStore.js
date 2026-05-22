@@ -95,9 +95,13 @@ export const useMazeStore = create((set, get) => ({
     set({ mazes: get().mazes.filter(m => m.id !== id) })
   },
 
-  // في الوضع التجريبي: نضغط الصورة ونخزّنها محلياً (max 1400px لتجنب تجاوز حد localStorage)
+  // uploadFile — path must always be ASCII-only (use generateSafeFileName before calling).
+  // Arabic title/description must NEVER be passed here; they belong only in the DB.
   uploadFile: async (bucket, path, file) => {
     if (IS_DEMO) {
+      // PDFs cannot be stored as display images in demo mode
+      if (file.type === 'application/pdf') return null
+      // Images: compress to JPEG and store as data URL in localStorage
       return new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = e => {
@@ -109,7 +113,6 @@ export const useMazeStore = create((set, get) => ({
             canvas.width  = Math.round(img.width  * scale)
             canvas.height = Math.round(img.height * scale)
             canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-            // JPEG بجودة 90% تعطي حجماً أصغر بكثير من PNG
             resolve(canvas.toDataURL('image/jpeg', 0.90))
           }
           img.onerror = reject
@@ -119,18 +122,20 @@ export const useMazeStore = create((set, get) => ({
         reader.readAsDataURL(file)
       })
     }
-    // Convert File → Blob to strip any non-ASCII filename that would break fetch headers
-    const safeBody = (file instanceof File)
-      ? new Blob([file], { type: file.type || 'application/octet-stream' })
-      : file
-    // Encode path so non-ASCII characters in the URL don't cause fetch errors
-    const safePath = path.split('/').map(encodeURIComponent).join('/')
-    const { error } = await supabase.storage.from(bucket).upload(safePath, safeBody, {
-      cacheControl: '3600', upsert: true,
-      contentType: safeBody.type || 'application/octet-stream',
+
+    // ── Non-demo: upload to Supabase Storage ──────────────────────────────────
+    // Use ArrayBuffer (not Blob/File) so Supabase uses the stream upload path
+    // instead of FormData — this avoids ANY Content-Disposition or filename
+    // header being set, which prevents the ISO-8859-1 header error entirely.
+    const mimeType = (file instanceof Blob ? file.type : null) || 'application/octet-stream'
+    const buffer   = await file.arrayBuffer()
+
+    const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
+      upsert:      true,
+      contentType: mimeType,
     })
     if (error) throw error
-    const { data } = supabase.storage.from(bucket).getPublicUrl(safePath)
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
     return data.publicUrl
   },
 

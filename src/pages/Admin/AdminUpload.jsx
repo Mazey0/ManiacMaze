@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar'
 import PDFPicker from '../../components/PDFPicker'
 import { useMazeStore } from '../../store/mazeStore'
 import { BUCKETS } from '../../lib/supabase'
+import { generateSafeFileName } from '../../lib/fileUtils'
 import { Upload, FileText, Image, Crop, ArrowRight, Check, Loader } from 'lucide-react'
 
 const STEPS = ['رفع الملف', 'اختيار الصفحة', 'قص المتاهة', 'البيانات', 'حفظ']
@@ -87,18 +88,17 @@ export default function AdminUpload() {
 
     try {
       const blob = await cropCanvasToBlob(pageData.canvas, crop)
-      const filename = `${Date.now()}_maze.png`
 
-      // Upload original file (sanitize filename to ASCII-only to avoid ISO-8859-1 header errors)
+      // Upload original file — ASCII-only filename, no Arabic anywhere in path or headers
       let originalUrl = null
       if (file) {
-        const rawExt = file.name.includes('.') ? file.name.split('.').pop() : 'bin'
-        const ext = rawExt.replace(/[^a-zA-Z0-9]/g, '') || 'bin'
-        originalUrl = await uploadFile(BUCKETS.MAZE_ORIGINALS, `${Date.now()}_original.${ext}`, file)
+        const origName = generateSafeFileName(file.type)
+        originalUrl = await uploadFile(BUCKETS.MAZE_ORIGINALS, origName, file)
       }
 
-      // Upload processed image
-      const processedUrl = await uploadFile(BUCKETS.MAZE_PROCESSED, filename, blob)
+      // Upload processed PNG image — ASCII-only filename, high quality
+      const procName = generateSafeFileName('image/png')
+      const processedUrl = await uploadFile(BUCKETS.MAZE_PROCESSED, procName, blob)
 
       // Create DB record
       const maze = await createMaze({

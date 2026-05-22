@@ -5,6 +5,7 @@ import ZoneOverlay from '../../components/ZoneOverlay'
 import { useMazeStore } from '../../store/mazeStore'
 import { useViewport } from '../../hooks/useViewport'
 import { BUCKETS } from '../../lib/supabase'
+import { generateSafeFileName } from '../../lib/fileUtils'
 import { Save, MapPin, Loader, Eye, EyeOff, Upload } from 'lucide-react'
 
 // ─── AdminMazeEdit ─────────────────────────────────────────────────────────────
@@ -105,7 +106,7 @@ export default function AdminMazeEdit() {
     setUploadingImg(true)
     setError(null)
     try {
-      const url = await uploadFile(BUCKETS.MAZE_PROCESSED, `${Date.now()}_maze.jpg`, file)
+      const url = await uploadFile(BUCKETS.MAZE_PROCESSED, generateSafeFileName(file.type), file)
       const updated = await updateMaze(id, { processed_url: url })
       setMaze(prev => ({ ...prev, processed_url: url }))
       setMazeSize({ w: updated?.width || 800, h: updated?.height || 800 })
