@@ -21,7 +21,7 @@ export const useAuthStore = create((set, get) => ({
   login: async (password) => {
     set({ error: null, loading: true })
     await new Promise(r => setTimeout(r, 350))
-    const hash = await sha256(password)
+    const hash = await sha256(password.trim())
     if (hash !== PASS_HASH) {
       set({ error: '✕', loading: false })
       return false

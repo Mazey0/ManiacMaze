@@ -18,14 +18,17 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-3">
+        {/* hidden username tricks browser into not injecting its own field */}
+        <input type="text" name="username" className="hidden" autoComplete="username" readOnly />
         <input
           type="password"
           className="input-field text-center tracking-widest"
           value={password}
           onChange={e => setPassword(e.target.value)}
           required
-          autoComplete="current-password"
+          autoComplete="new-password"
           dir="ltr"
+          autoFocus
         />
         {error && <p className="text-center text-red-400">{error}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full">
