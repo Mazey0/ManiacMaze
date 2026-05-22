@@ -7,6 +7,68 @@ const loadLocal = () => { try { return JSON.parse(localStorage.getItem(LS_KEY) |
 const saveLocal = (mazes) => localStorage.setItem(LS_KEY, JSON.stringify(mazes))
 const genId = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)
 
+// ─── isAscii helper ───────────────────────────────────────────────────────────
+const isAscii = (str) => typeof str === 'string' && /^[\x00-\x7F]*$/.test(str)
+
+// ─── safeUploadToStorage ──────────────────────────────────────────────────────
+// Single entry point for ALL Supabase Storage uploads.
+// Rules:
+//   • bucket, path, contentType must be ASCII-only strings
+//   • file/blob content is read as ArrayBuffer then wrapped in a nameless Blob
+//     so NO filename ever reaches the HTTP headers (avoids ISO-8859-1 error)
+//   • options contain ONLY { contentType, upsert: true } — no metadata, no
+//     cacheControl, no contentDisposition
+//   • Arabic text (title, description, category) is NEVER passed here;
+//     it lives only in the database
+//
+async function safeUploadToStorage(bucket, path, file, contentType) {
+  const safeContentType = (isAscii(contentType) && contentType)
+    ? contentType
+    : 'application/octet-stream'
+
+  // ── ASCII validation (defensive) ────────────────────────────────────────
+  if (!isAscii(bucket)) {
+    const err = new Error(`[safeUpload] bucket contains non-ASCII: "${bucket}"`)
+    console.error('[safeUpload] INVALID BUCKET', { bucket, path, safeContentType }, err)
+    throw err
+  }
+  if (!isAscii(path)) {
+    const err = new Error(`[safeUpload] path contains non-ASCII: "${path}"`)
+    console.error('[safeUpload] INVALID PATH', { bucket, path, safeContentType }, err)
+    throw err
+  }
+
+  console.log(`[safeUpload] → bucket="${bucket}"  path="${path}"  type="${safeContentType}"`)
+
+  try {
+    // Read raw bytes — strips any filename / metadata from the File object
+    const buffer     = await file.arrayBuffer()
+    // Wrap in a plain Blob with no name property
+    // (Supabase will use FormData internally, but Content-Disposition will
+    //  have no filename since plain Blob has no .name)
+    const uploadBlob = new Blob([buffer], { type: safeContentType })
+
+    const { error } = await supabase.storage.from(bucket).upload(path, uploadBlob, {
+      contentType: safeContentType,
+      upsert:      true,
+    })
+
+    if (error) throw error
+
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+    console.log(`[safeUpload] ✓ uploaded → ${data.publicUrl}`)
+    return data.publicUrl
+
+  } catch (err) {
+    console.error(
+      `[safeUpload] FAILED  bucket="${bucket}"  path="${path}"  type="${safeContentType}"`,
+      err
+    )
+    throw err
+  }
+}
+
+// ─── Zustand store ────────────────────────────────────────────────────────────
 export const useMazeStore = create((set, get) => ({
   mazes: [],
   currentMaze: null,
@@ -95,13 +157,13 @@ export const useMazeStore = create((set, get) => ({
     set({ mazes: get().mazes.filter(m => m.id !== id) })
   },
 
-  // uploadFile — path must always be ASCII-only (use generateSafeFileName before calling).
-  // Arabic title/description must NEVER be passed here; they belong only in the DB.
+  // uploadFile — public interface used by components.
+  // path MUST be ASCII-only (use generateSafeFileName in the caller).
+  // Arabic title/description must NEVER be passed here.
   uploadFile: async (bucket, path, file) => {
+    // ── Demo mode: no Supabase, store locally ──────────────────────────────
     if (IS_DEMO) {
-      // PDFs cannot be stored as display images in demo mode
-      if (file.type === 'application/pdf') return null
-      // Images: compress to JPEG and store as data URL in localStorage
+      if (file.type === 'application/pdf') return null   // can't display PDFs as data URL
       return new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = e => {
@@ -123,20 +185,9 @@ export const useMazeStore = create((set, get) => ({
       })
     }
 
-    // ── Non-demo: upload to Supabase Storage ──────────────────────────────────
-    // Use ArrayBuffer (not Blob/File) so Supabase uses the stream upload path
-    // instead of FormData — this avoids ANY Content-Disposition or filename
-    // header being set, which prevents the ISO-8859-1 header error entirely.
-    const mimeType = (file instanceof Blob ? file.type : null) || 'application/octet-stream'
-    const buffer   = await file.arrayBuffer()
-
-    const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
-      upsert:      true,
-      contentType: mimeType,
-    })
-    if (error) throw error
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-    return data.publicUrl
+    // ── Supabase Storage: route through safeUploadToStorage ───────────────
+    const mimeType = (file instanceof Blob && file.type) || 'application/octet-stream'
+    return safeUploadToStorage(bucket, path, file, mimeType)
   },
 
   setCurrentMaze: (maze) => set({ currentMaze: maze }),
