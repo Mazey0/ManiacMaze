@@ -60,14 +60,10 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-black text-white mb-3 leading-tight">
-            تقدر تحل متاهاتي؟
+            تقدر تحل <span className="text-[#6c63ff]">متاهاتي</span>؟
           </h1>
-          <p className="text-[#6c63ff] text-xl font-semibold mb-6 tracking-wide">
+          <p className="text-[#6c63ff] text-xl font-semibold mb-10 tracking-wide">
             Do you dare to solve my Mazes?
-          </p>
-
-          <p className="text-[#6b6b8a] text-lg mb-10 leading-relaxed max-w-md mx-auto">
-            متاهات مرسومة يدويًا بأشكال فريدة. ارسم مسارك بالقلم أو الإصبع، وسجّل أسرع وقت.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
